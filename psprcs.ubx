@@ -1,0 +1,323 @@
+# ***************************************************************
+#  This software and related documentation are provided under a
+#  license agreement containing restrictions on use and
+#  disclosure and are protected by intellectual property
+#  laws. Except as expressly permitted in your license agreement
+#  or allowed by law, you may not use, copy, reproduce,
+#  translate, broadcast, modify, license, transmit, distribute,
+#  exhibit, perform, publish or display any part, in any form or
+#  by any means. Reverse engineering, disassembly, or
+#  decompilation of this software, unless required by law for
+#  interoperability, is prohibited.
+#  The information contained herein is subject to change without
+#  notice and is not warranted to be error-free. If you find any
+#  errors, please report them to us in writing.
+#  
+#  Copyright (C) 1988, 2011, Oracle and/or its affiliates.
+#  All Rights Reserved.
+# ***************************************************************
+ 
+#
+#  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#  Oracle does not support creating custom UBX templates nor modifying delivered UBX templates
+#  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#
+# The following *SETTINGS are not used by PSAdmin.  They are used only by
+# the ToolsAdmin API and EM
+*FEATURES
+{"-label-"},{"-define-"},{"-on-"},{"-servers-"},{"-Oracle Env Manager Label-"}
+{App Engine},{APPENG},{Yes},{PSAESRV},{Application Engine Server (PSAE)}
+{Master Scheduler},{MSTRSRV},{Yes},{PSMSTPRC},{Master Scheduler Server (PSMSTPRCS)}
+*END
+*SETTINGS
+{"-label-"},{-formal name-}{"-value-"}
+{DBNAME},{Startup/DBName},{}
+{WINDOWS}
+{DBTYPE},{Startup/DBType},{MICROSFT}
+{WINDOWS}
+{UNIX}
+{DBTYPE},{Startup/DBType},{ORACLE}
+{UNIX}
+{WINDOWS}
+{PrcsServer},{Process Scheduler/PrcsServerName},{PSNT}
+{WINDOWS}
+{UNIX}
+{PrcsServer},{Process Scheduler/PrcsServerName},{PSUNX}
+{UNIX}
+{UserId},{Startup/UserId},{QEDMO}
+{UserPswd},{Startup/UserPswd},{QEDMO}
+{ConnectID},{Startup/ConnectId},{people}
+{ConnectPswd},{Startup/ConnectPswd},{peop1e}
+{ServerName},{Startup/ServerName},{}
+{WINDOWS}
+{Log/Output Dir},{Process Scheduler/Log/Output Directory},{%PS_SERVDIR%\log_output}
+{WINDOWS}
+{UNIX}
+{Log/Output Dir},{Process Scheduler/Log/Output Directory},{%PS_SERVDIR%/log_output}
+{UNIX}
+{WINDOWS}
+{SQRBIN},{SQR/SQRBIN},{%PS_HOME%\bin\sqr\mss\binw}
+{WINDOWS}
+{UNIX}
+{SQRBIN},{SQR/SQRBIN},{%PS_HOME%/bin/sqr/%PS_DB%/bin}
+{UNIX}
+{WINDOWS}
+{AddToPATH},{Tuxedo Settings/Add to PATH},{%WINDIR%;%WINDIR%\SYSTEM32}
+{WINDOWS}
+{UNIX}
+{AddToPATH},{Tuxedo Settings/Add to PATH},{}
+{UNIX}
+{WINDOWS}
+{DBBIN},{Process Scheduler/DBBIN},{c:\Program Files\Microsoft SQL Server\80\Tools\Binn}
+{Crystal Path},{Crystal/CrystalEXEPath},{}
+{WINDOWS}
+*END
+
+*PS_DEFINES
+# This section defines the variables used in the ubb file.  The ubb config
+# file generation utility, ubbgen, processes this section and replaces them
+# with their values in the rest of the file.  The resulting ubb file can
+# be used to generate the tuxconfig file directly, or can be modified
+# further with any text editor.
+#
+# USAGE:
+#   ubbgen -t psappsrv.ubx -c appsrv.cfg -o psappsrv.ubb -q y
+#   ubbgen will open the file psappsrv.ubx, process it, and produce the file
+#   psappsrv.ubb.
+#   The -q y option allows for command line processing when ubbgen is called from psadmin. (Quiet mode)
+#
+# FILE FORMAT:
+#   Substitution variables are enclosed in braces ('{', '}'), and
+#   must be defined in the PS_DEFINE block (delimited with the *PS_DEFINES
+#   and *END tokens).  There are four types of substitution variables:
+#       - Environment variables.  The name of the variable starts with '$'.
+#         ubbgen gets the value of these variables with getenv.
+#         ($TUXCONFIG)
+#       - Config file variables.  These variables are read from the
+#         configuration file passed in to ubbgen (appsrv.cfg, by default).
+#         The name of the variable starts with '$', followed by the name of
+#         the sub-section in the registry, then a slash ('\'), and then the
+#         name of the key.
+#         ($Domain Settings\Application Server Home)
+#       - Special variables.  ubbgen recognizes these variables by name, and
+#         performs special handling to get their values.
+#         (DOMAINID, IPCKEY, MACH, WSNADDR, UID GID)
+#       - Prompted variables.  Any variable which does not fall into the
+#         catergories above is assumed to be of this type.  ubbgen prompts
+#         the user to specify the value of the variable.  The line of text
+#         immediately following the variable definition is used as the prompt.
+#         (APPDIR, TUXDIR)
+#
+#   Any text following the pound symbol ('#') is interpreted as a comment,
+#   and is not searched for substitution variables.
+#
+#   The PS_DEFINES block is not copied into the output file.
+{APPENG} Do you want the Application Engines configured (y/n)? [y]:
+{MSTRSRV} Do you want the Master Scheduler configured (y/n)? [y]:
+*END
+
+########################################################################
+#
+# This is a skeletal TUXEDO configuration file - "psappsrv.ubb" designed
+# to be used for PeopleTools 7.5 app server and the Remote Call mechanism.
+# To configure additional resources, machines, servers, services, etc.
+# please refer to "ubbconfig" in section 5 of the TUXEDO System Reference
+# Manual.
+#
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Oracle does not support modifying UBB files
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+########################################################################
+
+*RESOURCES
+IPCKEY          {IPCKEY}        # ( 32768 < IPCKEY < 262143 )
+MASTER          "{MACH}"
+DOMAINID        {$Process Scheduler\PrcsServerName}_{IPCKEY}
+MODEL           SHM
+LDBAL           N
+#
+MAXMACHINES     256             # min, default=256
+MAXGROUPS       100             # min, default=100
+{MAXSERVERS}
+{MAXSERVICES}
+{MAXACCESSERS1}
+#
+MAXACLGROUPS    1               # def=16K (incl only to save BB space)
+MAXGTT          0               # def=100 (----------   " -----------)
+MAXCONV         50              # def=10  (----------   " -----------)
+#
+SECURITY        APP_PW
+SYSTEM_ACCESS   FASTPATH
+#
+PERM            0660            # can override on a per m/c basis
+#
+SCANUNIT        5               # Time in seconds between scans by the BBL
+                                # for old transactions and timed-out blocking
+                                # calls.
+
+SANITYSCAN      2               # The BBL indicates to the DBBL that it
+                                # is alive every (SCANUNIT * SANITYSCAN
+                                # seconds.
+
+DBBLWAIT        2               # (SCANUNIT * DBBLWAIT) is the time in
+                                # seconds after which the DBBL will time
+                                # out an unresponsive BBL.
+
+BBLQUERY        30              # (SCANUNIT * BBLQUERY) is the frequency
+                                # of status verification by the DBBL.
+                                # If the DBBL has not received an "I'm OK"
+                                # message from a BBL during this period,
+                                # the DBBL will send a status query message
+                                # to the BBL.  If no response is received,
+                                # the BBL''s node is partitioned.
+
+# DEBUG
+BLOCKTIME       60              # (SCANUNIT * BLOCKTIME) is the time in
+                                # seconds after which a blocking call
+                                # will time out from the client.
+#
+CMTRET          COMPLETE
+NOTIFY          DIPIN
+USIGNAL         SIGUSR2
+
+# ----------------------------------------------------------------------
+
+*MACHINES
+"{MACH}" LMID="{MACH}"                           # Machine name must be upper case
+        TUXDIR="{$TUXDIR}"                      # Paths cannot end in '\'
+{UNIX}
+        APPDIR="{$PS_SERVDIR}:{$PS_LIBPATH}"    # Append the PS LLP 
+{UNIX}
+{WINDOWS}
+        APPDIR="{$PS_SERVDIR}"
+{WINDOWS}
+        TUXCONFIG="{$TUXCONFIG}"
+        ULOGPFX="{LOGDIR}{FS}TUXLOG"
+        ENVFILE="{ENVFILE}"
+        UID={UID}                               # Has to be 0 at this time.
+        GID={GID}                               # Has to be 0 at this time.
+{WINDOWS}
+        TYPE="i386NT"
+{WINDOWS}
+        NETLOAD=0                               # We are not using multiple machines.
+        {MAXWSCLIENTS}
+        {MAXACCESSERS2}
+
+# ----------------------------------------------------------------------
+
+*GROUPS
+
+#
+# Tuxedo Groups
+# For application group numbers for new machines (LMIDs)
+# use group numbers 101-199;  201-299;  etc.
+#
+DEFAULT:        LMID="{MACH}"
+
+BASE            GRPNO=1
+
+MONITOR         GRPNO=50
+
+{APPENG}
+AESRV           GRPNO=101
+{APPENG}
+
+# ----------------------------------------------------------------------
+
+*SERVERS
+
+DEFAULT:        CLOPT="-A"       # Advertise all services.
+                REPLYQ=N         # Reply queue not needed for our simple setup.
+                MAXGEN={$Tuxedo\Max Restart Attempt} # Max number of restarts in the grace period.
+                GRACE={$Tuxedo\Grace Period}         # Grace Period.
+                RESTART={$Tuxedo\Restartable}
+                SYSTEM_ACCESS=FASTPATH
+
+{MSTRSRV}
+PSMSTPRC        SRVGRP=BASE
+                SRVID=102
+                MIN=1
+                MAX=1
+                RQADDR="MSTRSCHQ"
+                REPLYQ=Y
+                CLOPT="-o \"{REL_LOG}{FS}stdout\" -e \"{REL_LOG}{FS}stderr\" -A --  -CD {$Startup\DBName} -PS {$Process Scheduler\PrcsServerName} -A start -S PSMSTPRC"
+{MSTRSRV}
+
+{APPENG}
+#
+# PeopleSoft Application Engine Server
+#
+PSAESRV         SRVGRP=AESRV
+                SRVID=1
+                MIN={$PSAESRV\Max Instances}
+                MAX={$PSAESRV\Max Instances}
+                REPLYQ=Y
+                CLOPT="-o \"{REL_LOG}{FS}stdout\" -e \"{REL_LOG}{FS}stderr\" --  -CD {$Startup\DBName} -S PSAESRV"
+{APPENG}
+
+
+PSDSTSRV        SRVGRP=BASE
+                SRVID=103
+                MIN={$PSDSTSRV\Min Instances}
+                MAX={$PSDSTSRV\Max Instances}
+                RQADDR="DSTQ"
+                REPLYQ=Y
+                CLOPT="-o \"{REL_LOG}{FS}stdout\" -e \"{REL_LOG}{FS}stderr\" {$PSDSTSRV\Spawn Server} -sPostReport --  -CD {$Startup\DBName} -PS {$Process Scheduler\PrcsServerName} -A start -S PSDSTSRV"
+
+PSPRCSRV        SRVGRP=BASE
+                SRVID=101
+                MIN=1
+                MAX=1
+                RQADDR="SCHEDQ"
+                REPLYQ=Y
+                CLOPT="-o \"{REL_LOG}{FS}stdout\" -e \"{REL_LOG}{FS}stderr\" -sInitiateRequest --  -CD {$Startup\DBName} -PS {$Process Scheduler\PrcsServerName} -A start -S PSPRCSRV"
+
+#
+# PeopleSoft domain monitor
+#
+PSMONITORSRV    SRVGRP=MONITOR
+                SRVID=1
+                MIN=1
+                MAX=1
+                RQADDR="MONITOR"
+                REPLYQ=Y
+                RESTART=Y
+                CLOPT="-o \"{REL_LOG}{FS}stdout\" -e \"{REL_LOG}{FS}stderr\" -A -- -ID {IPCKEY}  -PS {$Process Scheduler\PrcsServerName} -S PSMONITORSRV"
+
+
+*SERVICES
+{APPENG}
+RunAeProgAsync  SRVGRP=AESRV
+                LOAD=50 PRIO=50
+                SVCTIMEOUT=0
+                BUFTYPE="ALL"
+
+RunAeProgSync   SRVGRP=AESRV
+                LOAD=50 PRIO=50
+                SVCTIMEOUT=0
+                BUFTYPE="ALL"
+{APPENG}
+
+InitiateRequest SRVGRP=BASE
+                LOAD=50 PRIO=50
+                SVCTIMEOUT=300
+                BUFTYPE="ALL"
+
+PostReport      SRVGRP=BASE
+                LOAD=50 PRIO=50
+                SVCTIMEOUT=3600
+                BUFTYPE="ALL"
+
+# ----------------------------------------------------------------------
+*PS_ENVFILE
+TEMP={LOGDIR}{FS}tmp
+TMP={LOGDIR}{FS}tmp
+INFORMIXSERVER={$Startup\ServerName}
+{WINDOWS}
+PATH={$PS_HOME}\verity\{VERITY_OS}\{VERITY_PLATFORM}\bin;{$Process Scheduler\DBBIN};{$PATH};{$Tuxedo Settings\Add to PATH}
+COBPATH={$PS_APP_HOME}\CBLBIN%PS_COBOLTYPE%;{$PS_HOME}\CBLBIN%PS_COBOLTYPE%
+{WINDOWS}
+{UNIX}
+COBPATH={$PS_APP_HOME}/cblbin:{$PS_HOME}/cblbin
+PATH={$PATH}:{$Tuxedo Settings\Add to PATH}
+{UNIX}

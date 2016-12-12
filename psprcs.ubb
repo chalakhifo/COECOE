@@ -1,0 +1,241 @@
+
+########################################################################
+#
+# This is a skeletal TUXEDO configuration file - "psappsrv.ubb" designed
+# to be used for PeopleTools 7.5 app server and the Remote Call mechanism.
+# To configure additional resources, machines, servers, services, etc.
+# please refer to "ubbconfig" in section 5 of the TUXEDO System Reference
+# Manual.
+#
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Oracle does not support modifying UBB files
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+########################################################################
+
+*RESOURCES
+IPCKEY          39847        # ( 32768 < IPCKEY < 262143 )
+MASTER          "coeprfap21"
+DOMAINID        PSUNX2_39847
+MODEL           SHM
+LDBAL           N
+# 
+MAXMACHINES     256             # min, default=256
+MAXGROUPS       100             # min, default=100
+MAXSERVERS       24
+
+MAXSERVICES      58
+
+MAXACCESSERS      24
+
+#
+MAXACLGROUPS    1               # def=16K (incl only to save BB space)
+MAXGTT          0               # def=100 (----------   " -----------)
+MAXCONV         50              # def=10  (----------   " -----------)
+#
+SECURITY        APP_PW
+SYSTEM_ACCESS   FASTPATH
+#
+PERM            0660            # can override on a per m/c basis
+#
+SCANUNIT        5               # Time in seconds between scans by the BBL
+                                # for old transactions and timed-out blocking
+                                # calls.
+
+SANITYSCAN      2               # The BBL indicates to the DBBL that it
+                                # is alive every (SCANUNIT * SANITYSCAN
+                                # seconds.
+
+DBBLWAIT        2               # (SCANUNIT * DBBLWAIT) is the time in
+                                # seconds after which the DBBL will time
+                                # out an unresponsive BBL.
+
+BBLQUERY        30              # (SCANUNIT * BBLQUERY) is the frequency
+                                # of status verification by the DBBL.
+                                # If the DBBL has not received an "I'm OK"
+                                # message from a BBL during this period,
+                                # the DBBL will send a status query message
+                                # to the BBL.  If no response is received,
+                                # the BBL's node is partitioned.
+
+# DEBUG
+BLOCKTIME       60              # (SCANUNIT * BLOCKTIME) is the time in
+                                # seconds after which a blocking call
+                                # will time out from the client.
+#
+CMTRET          COMPLETE
+NOTIFY          DIPIN
+USIGNAL         SIGUSR2
+
+# ----------------------------------------------------------------------
+
+*MACHINES
+"coeprfap21" LMID="coeprfap21"                           # Machine name must be upper case
+        TUXDIR="/home/psfdevps/PT85215/middleware/tuxedo10gR3"                      # Paths cannot end in '\'
+        APPDIR="/home/psfdevps/PS_CFG_HOME/appserv/prcs/COPF1UX2:/home/psfdevps/PT85215/bin"    # Append the PS LLP 
+        TUXCONFIG="/home/psfdevps/PS_CFG_HOME/appserv/prcs/COPF1UX2/PSTUXCFG"
+        ULOGPFX="/home/psfdevps/PS_CFG_HOME/appserv/prcs/COPF1UX2/LOGS/TUXLOG"
+        ENVFILE="/home/psfdevps/PS_CFG_HOME/appserv/prcs/COPF1UX2/psprcsrv.env"
+        UID=8186                               # Has to be 0 at this time.
+        GID=1085                               # Has to be 0 at this time.
+        NETLOAD=0                               # We are not using multiple machines.
+        MAXWSCLIENTS=0
+
+        MAXACCESSERS=24
+
+
+# ----------------------------------------------------------------------
+
+*GROUPS
+
+#
+# Tuxedo Groups
+# For application group numbers for new machines (LMIDs)
+# use group numbers 101-199;  201-299;  etc.
+#
+DEFAULT:        LMID="coeprfap21"
+
+BASE            GRPNO=1
+
+MONITOR         GRPNO=50
+
+AESRV           GRPNO=101
+
+# ----------------------------------------------------------------------
+
+*SERVERS
+
+DEFAULT:        CLOPT="-A"       # Advertise all services.
+                REPLYQ=N         # Reply queue not needed for our simple setup.
+                MAXGEN=5 # Max number of restarts in the grace period.
+                GRACE=600         # Grace Period.
+                RESTART=Y
+                SYSTEM_ACCESS=FASTPATH
+
+PSMSTPRC        SRVGRP=BASE
+                SRVID=102
+                MIN=1
+                MAX=1
+                RQADDR="MSTRSCHQ"
+                REPLYQ=Y
+                CLOPT="-o \"./LOGS/stdout\" -e \"./LOGS/stderr\" -A --  -CD COEPRF01 -PS PSUNX2 -A start -S PSMSTPRC"
+
+#
+# PeopleSoft Application Engine Server
+#
+PSAESRV         SRVGRP=AESRV
+                SRVID=1
+                MIN=12
+                MAX=12
+                REPLYQ=Y
+                CLOPT="-o \"./LOGS/stdout\" -e \"./LOGS/stderr\" --  -CD COEPRF01 -S PSAESRV"
+
+
+PSDSTSRV        SRVGRP=BASE
+                SRVID=103
+                MIN=2
+                MAX=2
+                RQADDR="DSTQ"
+                REPLYQ=Y
+                CLOPT="-o \"./LOGS/stdout\" -e \"./LOGS/stderr\"  -sPostReport --  -CD COEPRF01 -PS PSUNX2 -A start -S PSDSTSRV"
+
+PSPRCSRV        SRVGRP=BASE
+                SRVID=101
+                MIN=1
+                MAX=1
+                RQADDR="SCHEDQ"
+                REPLYQ=Y
+                CLOPT="-o \"./LOGS/stdout\" -e \"./LOGS/stderr\" -sInitiateRequest --  -CD COEPRF01 -PS PSUNX2 -A start -S PSPRCSRV"
+
+#
+# PeopleSoft domain monitor
+#
+PSMONITORSRV    SRVGRP=MONITOR
+                SRVID=1
+                MIN=1
+                MAX=1
+                RQADDR="MONITOR"
+                REPLYQ=Y
+                RESTART=Y
+                CLOPT="-o \"./LOGS/stdout\" -e \"./LOGS/stderr\" -A -- -ID 39847  -PS PSUNX2 -S PSMONITORSRV"
+
+
+*SERVICES
+RunAeProgAsync  SRVGRP=AESRV
+                LOAD=50 PRIO=50
+                SVCTIMEOUT=0
+                BUFTYPE="ALL"
+
+RunAeProgSync   SRVGRP=AESRV
+                LOAD=50 PRIO=50
+                SVCTIMEOUT=0
+                BUFTYPE="ALL"
+
+InitiateRequest SRVGRP=BASE
+                LOAD=50 PRIO=50
+                SVCTIMEOUT=300
+                BUFTYPE="ALL"
+
+PostReport      SRVGRP=BASE
+                LOAD=50 PRIO=50
+                SVCTIMEOUT=3600
+                BUFTYPE="ALL"
+
+# ----------------------------------------------------------------------
+# Info for domain parallel boot:
+#PARALLELBOOT 2|PSWATCHSRV|PSAPPSRV|PSSAMSRV|PSMONITORSRV|S
+#**********************************************************************
+#  ubbgen substitution values:
+# 
+# [ 0]:                                             {IPCKEY}:  39847
+# [ 1]:                                               {MACH}:  coeprfap21
+# [ 2]:                  {$Process Scheduler\PrcsServerName}:  PSUNX2
+# [ 3]:                                         {MAXSERVERS}:  MAXSERVERS       24
+
+# [ 4]:                                        {MAXSERVICES}:  MAXSERVICES      58
+
+# [ 5]:                                      {MAXACCESSERS1}:  MAXACCESSERS      24
+
+# [ 6]:                                            {$TUXDIR}:  /home/psfdevps/PT85215/middleware/tuxedo10gR3
+# [ 7]:                                        {$PS_SERVDIR}:  /home/psfdevps/PS_CFG_HOME/appserv/prcs/COPF1UX2
+# [ 8]:                                        {$PS_LIBPATH}:  /home/psfdevps/PT85215/bin
+# [ 9]:                                         {$TUXCONFIG}:  /home/psfdevps/PS_CFG_HOME/appserv/prcs/COPF1UX2/PSTUXCFG
+# [10]:                                             {LOGDIR}:  /home/psfdevps/PS_CFG_HOME/appserv/prcs/COPF1UX2/LOGS
+# [11]:                                                 {FS}:  /
+# [12]:                                            {ENVFILE}:  /home/psfdevps/PS_CFG_HOME/appserv/prcs/COPF1UX2/psprcsrv.env
+# [13]:                                                {UID}:  8186
+# [14]:                                                {GID}:  1085
+# [15]:                                       {MAXWSCLIENTS}:  MAXWSCLIENTS=0
+
+# [16]:                                      {MAXACCESSERS2}:  MAXACCESSERS=24
+
+# [17]:                        {$Tuxedo\Max Restart Attempt}:  5
+# [18]:                               {$Tuxedo\Grace Period}:  600
+# [19]:                                {$Tuxedo\Restartable}:  Y
+# [20]:                                            {REL_LOG}:  ./LOGS
+# [21]:                                    {$Startup\DBName}:  COEPRF01
+# [22]:                             {$PSAESRV\Max Instances}:  12
+# [23]:                            {$PSDSTSRV\Min Instances}:  2
+# [24]:                            {$PSDSTSRV\Max Instances}:  2
+# [25]:                             {$PSDSTSRV\Spawn Server}:  
+# [26]:                                {$Startup\ServerName}:  
+# [27]:                                       {$PS_APP_HOME}:  /home/psfdevps/PS_APP_HOME
+# [28]:                                           {$PS_HOME}:  /home/psfdevps/PT85215
+# [29]:                                              {$PATH}:  /home/psfdevps/PS_APP_HOME/bin:/home/psfdevps/PS_APP_HOME/bin/interfacedrivers::/home/psfdevps/PT85215/jre/bin:/home/psfdevps/PT85215/middleware/tuxedo10gR3/bin:/home/psfdevps/PT85215/middleware/tuxedo10gR3/jre/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/bin:.::/home/psfdevps/bin:/home/psfdevps/bin/interfacedrivers:/opt/nfs/oracle11203.solaris.sparc/bin:::/usr/sfw/bin:/svc/opt/cobol/cobol5.1/bin:/svc/opt/cobol/cobol5.1/lmf/bin:/usr/ccs/bin:/home/psfdevps/script:/usr/local/bin:/usr/lib:/svc/opt/cobol/cobol5.1/lib:/svc/opt/cobol/cobol5.1/lmf/lib:/home/psfdevps/PT85215/bin:/home/psfdevps/PT85215/bin/sqr/ORA/bin:/home/psfdevps/PT85215/verity/solaris/_ssol26/bin
+# [30]:                       {$Tuxedo Settings\Add to PATH}:  /home/psfdevps/PT85215/cblbin:/home/psfdevps/PS_APP_HOME/cblbin
+#**********************************************************************
+#**********************************************************************
+#  ubbgen control values:
+# 
+# [ 0]:               {UNIX}:  TRUE
+# [ 1]:              {!UNIX}:  FALSE
+# [ 2]:            {WINDOWS}:  FALSE
+# [ 3]:           {!WINDOWS}:  TRUE
+# [ 4]:             {APPENG}:  TRUE
+# [ 5]:            {!APPENG}:  FALSE
+# [ 6]:            {MSTRSRV}:  TRUE
+# [ 7]:           {!MSTRSRV}:  FALSE
+# [ 8]:          {DOMAIN_GW}:  FALSE
+# [ 9]:         {!DOMAIN_GW}:  TRUE
+# [10]:       {VERITY_TYPE3}:  FALSE
+# [11]:      {!VERITY_TYPE3}:  TRUE
+#**********************************************************************
